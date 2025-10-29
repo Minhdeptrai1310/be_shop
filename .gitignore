@@ -1,0 +1,8 @@
+__pycache__
+.pytest_cache
+Pipfile
+Pipfile.lock
+env/
+venv/
+*/__pycache__
+.env
