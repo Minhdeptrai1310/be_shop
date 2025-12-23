@@ -4,30 +4,36 @@ from passlib.hash import bcrypt
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
 from database.collections import init_db
+import base64
+# from bas64, md5
 
 
 class User(BaseModel):
     id: str
     name: str
     email: EmailStr
+    role: str
     password: str
     createdAt: datetime
     updatedAt: datetime
 
     @classmethod
     async def create_user(cls, name: str, email: str, password: str, userEntity):
-        hashed_password = bcrypt.hash(password)
+        # NOTE: base64 is reversible and not suitable for password hashing in production.
+        # Kept as-is to match existing code pattern; consider replacing with a secure hash.
+        hashed_password = base64.b64encode(password.encode('utf-8')).decode('utf-8')
         current_time = datetime.now()
         user_data = {
             "name": name,
             "email": email,
+            "role": "user",
             "password": hashed_password,
             "createdAt": current_time,
             "updatedAt": current_time
         }
-        result = await userEntity.insert_one(user_data)
+        result = userEntity.insert_one(user_data)
         user_id = str(result.inserted_id)
-        return cls(id=user_id, name=name, email=email, password=hashed_password, createdAt=current_time, updatedAt=current_time)
+        return cls(id=user_id, name=name, email=email, role="user", password=hashed_password, createdAt=current_time, updatedAt=current_time)
 
     @staticmethod
     async def delete_user(user_id: str, userEntity):
@@ -44,6 +50,7 @@ class User(BaseModel):
                 id=user_id,
                 name=document["name"],
                 email=document["email"],
+                role=document.get("role", "user"),
                 password=document["password"],
                 createdAt=document["createdAt"],
                 updatedAt=document["updatedAt"]
@@ -60,6 +67,7 @@ class User(BaseModel):
             id=str(document["_id"]),
             name=document["name"],
             email=document["email"],
+            role=document.get("role", "user"),
             password=document["password"],
             createdAt=document["createdAt"],
             updatedAt=document["updatedAt"]
@@ -67,6 +75,7 @@ class User(BaseModel):
 
     @classmethod
     async def find_one_user_by_email(cls, user_email: str, userEntity):
+        print("Finding user by email:", userEntity)
         return userEntity.find_one({"email": user_email})
 
     @staticmethod

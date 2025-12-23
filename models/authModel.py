@@ -7,7 +7,7 @@ class UserRegisterSchema(BaseModel):
     password: str = Field(...)
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "username": "user1",
                 "email": "user@test.com",
