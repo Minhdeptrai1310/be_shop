@@ -12,3 +12,7 @@ class GetAllUserResponseSchema(BaseModel):
     success: bool
     message: str
     data: List[DataResponseBody]
+    
+class UpdateDataResponseBody(BaseModel):
+    name: str
+    phone: str

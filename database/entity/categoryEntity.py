@@ -3,12 +3,13 @@ from bson.objectid import ObjectId
 from pydantic import BaseModel
 from datetime import datetime
 import re
+from typing import Optional
 
 
 class Category(BaseModel):
     id: str
-    name: str
-    slug: str
+    name: Optional[str]
+    slug: Optional[str]
 
     @staticmethod
     def generate_slug(name: str) -> str:

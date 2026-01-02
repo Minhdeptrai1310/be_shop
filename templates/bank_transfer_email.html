@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Xác nhận đơn hàng</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6;">
+    <p>Kính chào <strong>{{ userInfo.name }}</strong>,</p>
+
+    <p>Cảm ơn Quý khách đã đặt hàng tại <strong>{{ store_name }}</strong>.</p>
+
+    <h3>Thông tin đơn hàng</h3>
+    <ul>
+        <li>Mã đơn hàng: <strong>{{ orderCode }}</strong></li>
+        <li>Ngày đặt hàng: {{ order_date }}</li>
+        <li>Tổng tiền: <strong>{{ totalAmount }} VND</strong></li>
+        <li>Phương thức thanh toán: Chuyển khoản ngân hàng</li>
+    </ul>
+
+    <h3>Thông tin chuyển khoản</h3>
+    <ul>
+        <li>Ngân hàng: {{ bank_name }}</li>
+        <li>Số tài khoản: {{ bank_account }}</li>
+        <li>Chủ tài khoản: {{ bank_owner }}</li>
+        <li>Nội dung chuyển khoản: <strong>{{ orderCode }} - {{ userInfo.name }}</strong></li>
+    </ul>
+
+    <p>Sau khi hoàn tất chuyển khoản, vui lòng chờ hệ thống xác nhận trong vòng {{ processing_time }}.</p>
+
+    <p>
+        Mọi thắc mắc vui lòng liên hệ:<br>
+        Email: {{ support_email }}<br>
+        Hotline: {{ hotline }}
+    </p>
+
+    <p>Trân trọng,<br>
+    <strong>{{ store_name }}</strong></p>
+</body>
+</html>

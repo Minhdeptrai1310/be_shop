@@ -6,7 +6,17 @@ from util.ResponseSchema import successResponse, errorResponse
 from database.entity.userEntity import User
 from auth.tokenGenerator import generateToken
 from passlib.hash import bcrypt
+from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
+from google.oauth2 import id_token
+from google.auth.transport import requests
+from models.authModel import GoogleTokenRequest
+from config.globals import GOOGLE_CLIENT_ID
+from models.userModel import UpdateDataResponseBody
+from controllers.emailController import send_mail, SendMailDTO
+import secrets
+import string
+import jwt
 
 async def registerController(name: str, email: str, password: str, db):
     user = await User.find_one_user_by_email(email, db)
@@ -16,7 +26,7 @@ async def registerController(name: str, email: str, password: str, db):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=response)
     try:
-        users_collection = db["users"]
+        users_collection = db
         new_user = await User.create_user(name=name, email=email, password=password, userEntity=users_collection)
         return successResponse("User Registered", {
             "id": str(new_user.id),
@@ -27,10 +37,86 @@ async def registerController(name: str, email: str, password: str, db):
         print("exception under Register controller:", ex)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail=errorResponse("Internal Server Error"))
+    
+async def googleLoginController(request: GoogleTokenRequest, db):
+    try:
+        # Xác thực Google token
+        idinfo = id_token.verify_oauth2_token(
+            request.token, 
+            requests.Request(), 
+            GOOGLE_CLIENT_ID,
+            clock_skew_in_seconds=60
+        )
+
+        # Lấy thông tin từ Google
+        google_id = idinfo['sub']
+        email = idinfo['email']
+        name = idinfo['name']
+        picture = idinfo.get('picture', '')
+
+        # Kiểm tra user đã tồn tại chưa
+        users_collection = db
+        existing_user = users_collection.find_one({"google_id": google_id})
+        is_new_user = False
+
+        if existing_user:
+            # Cập nhật last_login
+            users_collection.update_one(
+                {"google_id": google_id},
+                {"$set": {"last_login": datetime.utcnow()}}
+            )
+            user_id = str(existing_user["_id"])
+            print(f"✅ User đăng nhập lại: {email}")
+        else:
+            # Tạo user mới
+            new_user = {
+                "google_id": google_id,
+                "email": email,
+                "name": name,
+                "picture": picture,
+                "created_at": datetime.utcnow(),
+                "last_login": datetime.utcnow()
+            }
+            result = users_collection.insert_one(new_user)
+            user_id = str(result.inserted_id)
+            is_new_user = True
+            print(f"✅ User mới được tạo: {email}")
+
+        # Lấy thông tin user đầy đủ
+        user = users_collection.find_one({"google_id": google_id})
+        
+        # Tạo JWT token
+        token = generateToken({"_id": user_id, "exp": datetime.now(
+            tz=timezone.utc) + timedelta(days=2)})
+        
+        payload = jwt.decode(token, options={"verify_signature": False})
+        token_expire = payload["exp"]
+
+        return {
+            "success": True,
+            "token": token,
+            "token_expire": token_expire,
+            "is_new_user": is_new_user,
+            "user": {
+                "id": str(user["_id"]),
+                "google_id": user["google_id"],
+                "email": user["email"],
+                "name": user["name"],
+                "picture": user["picture"],
+                "created_at": user["created_at"].isoformat(),
+                "last_login": user["last_login"].isoformat()
+            }
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=f"Token không hợp lệ: {str(e)}")
+    except Exception as e:
+        print(f"ERROR: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Lỗi server")
 
 
 async def loginController(email: str, password: str, db):
-    db_user = await User.find_one_user_by_email(email, db["users"])
+    db_user = await User.find_one_user_by_email(email, db)
     if not db_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=errorResponse(
             "User with this email does not exist"))
@@ -51,6 +137,7 @@ async def loginController(email: str, password: str, db):
                 "name": db_user['name'],
                 "email": db_user['email'],
                 "role": db_user['role'],
+                "phone": db_user['phone']
             }
         })
     except Exception as e:
@@ -59,45 +146,40 @@ async def loginController(email: str, password: str, db):
             "Internal Server Error"), headers={"X-Error": str(e)})
 
 
-async def updateProfileController(user_id: str, full_name: str, phone: str, db):
+async def updateProfileController(user_id: str, payload: UpdateDataResponseBody, db):
     try:
         if not user_id:
             raise HTTPException(status_code=400, detail=errorResponse("Thiếu thông tin User ID"))
             
-        users_collection = db["users"]
+        users_collection = db
         
-        # 1. Kiểm tra định dạng ID (Tránh lỗi crash server nếu ID sai định dạng)
         try:
             oid = ObjectId(user_id)
         except InvalidId:
             raise HTTPException(status_code=400, detail=errorResponse("ID người dùng không hợp lệ"))
 
-        # 2. Kiểm tra người dùng có tồn tại không
-        db_user = await users_collection.find_one({"_id": oid})
+        db_user = users_collection.find_one({"_id": oid})
         if not db_user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, 
                 detail=errorResponse("Người dùng không tồn tại trong hệ thống")
             )
 
-        # 3. Tiến hành cập nhật
-        # Lưu ý: 'name' trong DB tương ứng với 'fullName' ở FE
         update_data = {
-            "name": full_name,
-            "phone": phone
+            "name": payload.name,
+            "phone": payload.phone
         }
         
-        await users_collection.update_one(
+        users_collection.update_one(
             {"_id": oid},
             {"$set": update_data}
         )
 
-        # 4. Lấy lại dữ liệu mới nhất để đồng bộ hóa cho Frontend
-        updated_user = await users_collection.find_one({"_id": oid})
+        updated_user = users_collection.find_one({"_id": oid})
         
         return successResponse("Cập nhật thông tin thành công", {
             "id": str(updated_user['_id']),
-            "fullName": updated_user['name'],
+            "name": updated_user['name'],
             "email": updated_user['email'],
             "phone": updated_user.get('phone', ''),
             "role": updated_user.get('role', 'customer'),
@@ -115,12 +197,10 @@ async def updateProfileController(user_id: str, full_name: str, phone: str, db):
 
 async def changePasswordController(user_id: str, current_password: str, new_password: str, db):
     try:
-        # 1. Truy cập collection users
-        users_collection = db["users"]
+        users_collection = db
         
-        # 2. Tìm người dùng trong database theo ID (ép kiểu ObjectId nếu cần)
         from bson import ObjectId
-        db_user = await users_collection.find_one({"_id": ObjectId(user_id)})
+        db_user = users_collection.find_one({"_id": ObjectId(user_id)})
         
         if not db_user:
             raise HTTPException(
@@ -128,7 +208,6 @@ async def changePasswordController(user_id: str, current_password: str, new_pass
                 detail=errorResponse("Người dùng không tồn tại")
             )
 
-        # 3. Kiểm tra mật khẩu hiện tại (Giải mã Base64 tương tự loginController)
         try:
             stored_password = base64.b64decode(db_user['password']).decode('utf-8')
         except Exception:
@@ -143,11 +222,9 @@ async def changePasswordController(user_id: str, current_password: str, new_pass
                 detail=errorResponse("Mật khẩu hiện tại không chính xác")
             )
 
-        # 4. Mã hóa mật khẩu mới sang Base64
         new_password_encoded = base64.b64encode(new_password.encode('utf-8')).decode('utf-8')
 
-        # 5. Cập nhật mật khẩu mới vào MongoDB
-        result = await users_collection.update_one(
+        result = users_collection.update_one(
             {"_id": db_user["_id"]},
             {"$set": {"password": new_password_encoded}}
         )
@@ -168,3 +245,42 @@ async def changePasswordController(user_id: str, current_password: str, new_pass
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=errorResponse("Lỗi hệ thống nội bộ")
         )
+        
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+def generate_password(length: int = 10):
+    chars = string.ascii_letters + string.digits
+    return "".join(secrets.choice(chars) for _ in range(length))
+
+
+async def forgotPassword(email: str, db, emailDb):
+    users_collection = db
+    db_user = users_collection.find_one({"email": email})
+
+    if not db_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=errorResponse("Email chưa được đăng ký!"),
+        )
+
+    new_password = generate_password()
+    print(new_password)
+
+    hashed_password = base64.b64encode(new_password.encode('utf-8')).decode('utf-8')
+    
+    users_collection.update_one(
+        {"_id": db_user["_id"]},
+        {"$set": {"password": hashed_password}},
+    )
+
+    await send_mail(
+        {
+            "to": email,
+            "subject": "Mật khẩu mới của bạn",
+            "content": f"Mật khẩu mới của bạn là: {new_password}"
+        },
+        emailDb
+    )
+
+    return successResponse("Mật khẩu mới đã được gửi về email")

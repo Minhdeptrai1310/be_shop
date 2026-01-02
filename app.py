@@ -16,9 +16,16 @@ from routes.auth import auth as authRouter
 from routes.category import category as categoryRouter
 from routes.role import role as roleRouter
 from routes.product import product as productRouter
+from routes.email import email as emailRouter
+from routes.upload import upload as uploadRouter
+from routes.cart import cart as cartRouter
+from routes.order import order as orderRouter
 from util.ResponseSchema import successResponse
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
+
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request, exc):
@@ -60,3 +67,7 @@ app.include_router(userRouter, tags=['user'], prefix='/users' , dependencies=[De
 app.include_router(categoryRouter, tags=['category'], prefix='/categories')
 app.include_router(roleRouter, tags=['role'], prefix='/roles')
 app.include_router(productRouter, tags=['product'], prefix='/products')
+app.include_router(emailRouter, tags=['email'], prefix='/email')
+app.include_router(uploadRouter, tags=['upload'], prefix='/upload')
+app.include_router(cartRouter, tags=['cart'], prefix='/cart')
+app.include_router(orderRouter, tags=['order'], prefix='/order')

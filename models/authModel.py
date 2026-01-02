@@ -5,7 +5,7 @@ class UserRegisterSchema(BaseModel):
     username: str = Field(...)
     email: EmailStr = Field(...)
     password: str = Field(...)
-
+    print("UserRegisterSchema:", username, email, password)
     class Config:
         json_schema_extra = {
             "example": {
@@ -29,5 +29,14 @@ class UserLoginSchema(BaseModel):
     email: EmailStr = Field(...)
     password: str = Field(...)
 
+class ChangePasswordRequest(BaseModel):
+    old_password: str = Field(...)
+    new_password: str = Field(...)
+
+class GoogleTokenRequest(BaseModel):
+    token: str
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
 
 

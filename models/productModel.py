@@ -12,6 +12,7 @@ class ProductCreateSchema(BaseModel):
     colors: List[str] = Field(..., description="Available colors")
     stock: int = Field(..., description="Stock quantity")
     images: List[str] = Field(..., description="Product images")
+    featured: bool = Field(..., description="Feature product")
 
     class Config:
         json_schema_extra = {
@@ -39,6 +40,7 @@ class ProductUpdateSchema(BaseModel):
     colors: Optional[List[str]] = Field(None, description="Available colors")
     stock: Optional[int] = Field(None, description="Stock quantity")
     images: Optional[List[str]] = Field(None, description="Product images")
+    featured: Optional[bool] = Field(..., description="Feature product")
 
     class Config:
         json_schema_extra = {
@@ -61,6 +63,7 @@ class ProductDataResponseBody(BaseModel):
     colors: List[str] = Field(...)
     stock: int = Field(...)
     images: List[str] = Field(...)
+    featured: bool = Field(...)
 
 
 class ProductResponseSchema(BaseModel):

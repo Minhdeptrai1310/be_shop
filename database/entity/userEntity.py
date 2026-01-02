@@ -4,6 +4,7 @@ from passlib.hash import bcrypt
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
 from database.collections import init_db
+from typing import Optional
 import base64
 # from bas64, md5
 
@@ -13,9 +14,8 @@ class User(BaseModel):
     name: str
     email: EmailStr
     role: str
-    password: str
-    createdAt: datetime
-    updatedAt: datetime
+    createdAt: Optional[datetime]
+    updatedAt: Optional[datetime]
 
     @classmethod
     async def create_user(cls, name: str, email: str, password: str, userEntity):
@@ -33,7 +33,7 @@ class User(BaseModel):
         }
         result = userEntity.insert_one(user_data)
         user_id = str(result.inserted_id)
-        return cls(id=user_id, name=name, email=email, role="user", password=hashed_password, createdAt=current_time, updatedAt=current_time)
+        return cls(id=user_id, name=name, email=email, role="user", createdAt=current_time, updatedAt=current_time)
 
     @staticmethod
     async def delete_user(user_id: str, userEntity):
@@ -51,7 +51,6 @@ class User(BaseModel):
                 name=document["name"],
                 email=document["email"],
                 role=document.get("role", "user"),
-                password=document["password"],
                 createdAt=document["createdAt"],
                 updatedAt=document["updatedAt"]
             )
@@ -68,9 +67,8 @@ class User(BaseModel):
             name=document["name"],
             email=document["email"],
             role=document.get("role", "user"),
-            password=document["password"],
-            createdAt=document["createdAt"],
-            updatedAt=document["updatedAt"]
+            createdAt=document.get("createdAt", None),
+            updatedAt=document.get("updatedAt", None)
         )
 
     @classmethod

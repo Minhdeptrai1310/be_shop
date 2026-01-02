@@ -18,6 +18,7 @@ class Product(BaseModel):
     colors: List[str]
     stock: int
     images: List[str]
+    featured: bool
     createdAt: datetime
     updatedAt: datetime
 
@@ -75,6 +76,7 @@ class Product(BaseModel):
                 colors=document.get("colors", []),
                 stock=document.get("stock"),
                 images=document.get("images", []),
+                featured=document.get("featured", False),
                 createdAt=document.get("createdAt"),
                 updatedAt=document.get("updatedAt")
             )
@@ -97,6 +99,7 @@ class Product(BaseModel):
             colors=document.get("colors", []),
             stock=document.get("stock"),
             images=document.get("images", []),
+            featured=document.get("featured", False),
             createdAt=document.get("createdAt"),
             updatedAt=document.get("updatedAt")
         )
