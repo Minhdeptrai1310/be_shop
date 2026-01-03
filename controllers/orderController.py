@@ -8,6 +8,7 @@ from models.orderModel import OrderCreateSchema
 from util.order_code import generate_order_code
 from jinja2 import Environment, FileSystemLoader
 from controllers.emailController import send_mail, SendMailDTO
+from util.ResponseSchema import successResponse, errorResponse
 
 async def check_out(payload: OrderCreateSchema, db, cart_db, product_db, order_item_db, user_db):
     userId = payload.userId
@@ -63,7 +64,7 @@ async def check_out(payload: OrderCreateSchema, db, cart_db, product_db, order_i
     cart_db.delete_many({"userId": userId})
 
     # 6. Load lại order + items để trả response
-    full_order = await OrderEntity.find_order_by_id(order.id, db, order_item_db)
+    full_order = await OrderEntity.find_order_by_id(order.id, db, order_item_db, user_db)
 
     return {
         "success": True,
@@ -124,5 +125,29 @@ async def check_out_and_send_mail(
         print("Send mail failed:", e)
 
     return checkout
+
+async def get_all_orders_controller(order_db, order_item_db, user_db):
+    all_orders = await OrderEntity.get_all_orders(order_db, order_item_db, user_db)
+    return successResponse("All Orders Fetched", all_orders)
+
+async def confirm_payment_controller(order_id, order_db, order_item_db, user_db, email_db):
+    confirm = await OrderEntity.confirm_payment(order_id, order_db, order_item_db, user_db)
+    print(confirm)
+    env = Environment(loader=FileSystemLoader("templates"))
+    template = env.get_template("confirm_payment_email.html")
+    html_content = template.render(confirm)
+
+    mail_data = SendMailDTO(
+        to=confirm.user_info.email,
+        subject=f"Xác nhận thanh toán đơn hàng {confirm.orderCode}",
+        content=html_content
+    )
+
+    try:
+        await send_mail(mail_data, email_db, True)
+    except Exception as e:
+        print("Send mail failed:", e)
+
+    return successResponse("Confirmed order", confirm)
 
 

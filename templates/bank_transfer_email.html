@@ -7,14 +7,14 @@
 <body style="font-family: Arial, sans-serif; line-height: 1.6;">
     <p>Kính chào <strong>{{ userInfo.name }}</strong>,</p>
 
-    <p>Cảm ơn Quý khách đã đặt hàng tại <strong>{{ store_name }}</strong>.</p>
+    <p>Cảm ơn Quý khách đã đặt hàng tại <strong>Minh's Shop</strong>.</p>
 
     <h3>Thông tin đơn hàng</h3>
     <ul>
         <li>Mã đơn hàng: <strong>{{ orderCode }}</strong></li>
-        <li>Ngày đặt hàng: {{ order_date }}</li>
+        <li>Ngày đặt hàng: {{ createdAt }}</li>
         <li>Tổng tiền: <strong>{{ totalAmount }} VND</strong></li>
-        <li>Phương thức thanh toán: Chuyển khoản ngân hàng</li>
+        <li>Phương thức thanh toán: {{ paymentMethod }}</li>
     </ul>
 
     <h3>Thông tin chuyển khoản</h3>

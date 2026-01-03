@@ -13,9 +13,9 @@ class User(BaseModel):
     id: str
     name: str
     email: EmailStr
-    role: str
-    createdAt: Optional[datetime]
-    updatedAt: Optional[datetime]
+    role: Optional[str] = 'user'
+    createdAt: Optional[datetime] = None
+    updatedAt: Optional[datetime] = None
 
     @classmethod
     async def create_user(cls, name: str, email: str, password: str, userEntity):

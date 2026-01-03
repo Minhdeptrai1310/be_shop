@@ -5,6 +5,7 @@ from fastapi import HTTPException
 from pydantic import BaseModel
 from typing import Optional, List
 from models.orderModel import OrderStatusEnum, OrderPaymentMethodEnum
+from database.entity.userEntity import User
 
 class OrderItemEntity(BaseModel):
     id: str
@@ -18,6 +19,7 @@ class OrderItemEntity(BaseModel):
 class OrderEntity(BaseModel):
     id: str
     userId: str
+    user_info: User
     orderCode: str
     totalAmount: int
     status: OrderStatusEnum
@@ -25,6 +27,8 @@ class OrderEntity(BaseModel):
     paidAt: Optional[datetime] = None
     address: str
     orderItems: List[OrderItemEntity] = []
+    createdAt: Optional[datetime] = None
+    updatedAt: Optional[datetime] = None
 
     @classmethod
     async def create_order(
@@ -36,6 +40,7 @@ class OrderEntity(BaseModel):
         address: str,
         orderEntity
     ):
+        now = datetime.utcnow()
         order_data = {
             "userId": userId,
             "orderCode": orderCode,
@@ -43,7 +48,9 @@ class OrderEntity(BaseModel):
             "status": OrderStatusEnum.PENDING_PAYMENT,
             "paymentMethod": paymentMethod,
             "address": address,
-            "paidAt": None
+            "paidAt": None,
+            "createdAt": now,
+            "updatedAt": now,
         }
 
         result = orderEntity.insert_one(order_data)
@@ -57,14 +64,30 @@ class OrderEntity(BaseModel):
             paymentMethod=paymentMethod,
             address=address,
             paidAt=None,
-            orderItems=[]
+            orderItems=[],
+            createdAt=now,
+            updatedAt=now,
         )
     
     @classmethod
-    async def find_order_by_id(cls, order_id: str, db, order_items_db):
+    async def get_all_orders(cls, db, order_items_db, user_db):
+        all_order_doc = db.find()
+        orders = []
+        for doc in all_order_doc:
+            order_id = str(doc['_id'])
+            item = await cls.find_order_by_id(order_id, db, order_items_db, user_db)
+            orders.append(item)
+        return orders
+    
+    @classmethod
+    async def find_order_by_id(cls, order_id: str, db, order_items_db, user_db):
         order_doc = db.find_one({"_id": ObjectId(order_id)})
         if not order_doc:
             raise HTTPException(status_code=404, detail="Order not found")
+
+        user_info = user_db.find_one({'_id': ObjectId(order_doc['userId'])})
+        if not user_info:
+            raise HTTPException(status_code=404, detail="User not found")
 
         items_cursor = order_items_db.find({"orderId": ObjectId(order_id)})
         items = []
@@ -83,17 +106,24 @@ class OrderEntity(BaseModel):
         return cls(
             id=str(order_doc["_id"]),
             userId=order_doc["userId"],
+            user_info=User(
+                id=str(user_info['_id']),
+                name=user_info['name'],
+                email=user_info['email'],
+            ),
             orderCode=order_doc["orderCode"],
             totalAmount=order_doc["totalAmount"],
             status=order_doc["status"],
             paymentMethod=order_doc["paymentMethod"],
             address=order_doc["address"],
             paidAt=order_doc.get("paidAt"),
-            orderItems=items
+            orderItems=items,
+            createdAt=order_doc.get("createdAt"),
+            updatedAt=order_doc.get("updatedAt")
         )
     
     @classmethod
-    async def confirm_payment(cls, order_id: str, orderEntity):
+    async def confirm_payment(cls, order_id: str, orderEntity, orderItemEntity, userEntity):
         now = datetime.now()
         result = orderEntity.update_one(
             {"_id": ObjectId(order_id), "status": OrderStatusEnum.PENDING_PAYMENT},
@@ -108,7 +138,8 @@ class OrderEntity(BaseModel):
         if result.matched_count == 0:
             raise HTTPException(status_code=400, detail="Invalid order status")
 
-        return True
+        order_doc = await cls.find_order_by_id(order_id, orderEntity, orderItemEntity, userEntity)
+        return order_doc
     
     @classmethod
     async def expire_orders(cls, orderEntity, hours: int = 24):

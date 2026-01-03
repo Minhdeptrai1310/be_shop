@@ -274,12 +274,14 @@ async def forgotPassword(email: str, db, emailDb):
         {"$set": {"password": hashed_password}},
     )
 
+    mail_data = SendMailDTO(
+        to=email,
+        subject="Mật khẩu mới của bạn",
+        content=f"Mật khẩu mới của bạn là: {new_password}"
+    )
+
     await send_mail(
-        {
-            "to": email,
-            "subject": "Mật khẩu mới của bạn",
-            "content": f"Mật khẩu mới của bạn là: {new_password}"
-        },
+        mail_data,
         emailDb
     )
 

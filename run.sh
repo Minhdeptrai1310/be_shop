@@ -1,1 +1,1 @@
-./minio/minio.exe server ./minio --console-address ":9001" & py ./main.py
+../minio/minio.exe server ../minio --console-address ":9001" & py ./main.py

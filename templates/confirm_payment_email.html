@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Xác nhận thanh toán</title>
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background-color: #f4f6f8;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 30px auto;
+      background-color: #ffffff;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .header {
+      background-color: #16a34a;
+      color: #ffffff;
+      padding: 20px;
+      text-align: center;
+    }
+    .content {
+      padding: 24px;
+      color: #333333;
+      line-height: 1.6;
+    }
+    .order-info {
+      margin: 20px 0;
+      border-collapse: collapse;
+      width: 100%;
+    }
+    .order-info td {
+      padding: 8px 0;
+    }
+    .order-info td:first-child {
+      color: #666;
+      width: 40%;
+    }
+    .total {
+      font-size: 18px;
+      font-weight: bold;
+      color: #16a34a;
+    }
+    .footer {
+      background-color: #f9fafb;
+      padding: 16px;
+      text-align: center;
+      font-size: 12px;
+      color: #777;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>Thanh toán đã được xác nhận</h2>
+    </div>
+
+    <div class="content">
+      <p>Kính chào <strong>{{ user_info.name }}</strong>,</p>
+
+      <p>
+        Chúng tôi xin thông báo rằng <strong>thanh toán cho đơn hàng của bạn đã được xác nhận thành công</strong>.
+      </p>
+
+      <table class="order-info">
+        <tr>
+          <td>Mã đơn hàng:</td>
+          <td><strong>{{ orderCode }}</strong></td>
+        </tr>
+        <tr>
+          <td>Phương thức thanh toán:</td>
+          <td>{{ paymentMethod }}</td>
+        </tr>
+        <tr>
+          <td>Thời gian xác nhận:</td>
+          <td>{{ confirmedAt }}</td>
+        </tr>
+        <tr>
+          <td>Tổng thanh toán:</td>
+          <td class="total">{{ totalAmount }} VND</td>
+        </tr>
+      </table>
+
+      <p>
+        Đơn hàng của bạn hiện đang được <strong>xử lý và chuẩn bị giao</strong>.
+        Chúng tôi sẽ tiếp tục thông báo khi đơn hàng được bàn giao cho đơn vị vận chuyển.
+      </p>
+
+      <p>
+        Nếu bạn cần hỗ trợ, vui lòng liên hệ:
+        <br />
+        Email: <a href="mailto:{{ supportEmail }}">{{ supportEmail }}</a>
+        <br />
+        Hotline: {{ supportPhone }}
+      </p>
+
+      <p>Xin chân thành cảm ơn bạn đã tin tưởng và mua sắm tại <strong>Minh's Shop</strong>.</p>
+    </div>
+
+    <div class="footer">
+      © 2026 Minh's Shop. All rights reserved.
+    </div>
+  </div>
+</body>
+</html>
