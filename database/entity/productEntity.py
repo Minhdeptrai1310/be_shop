@@ -25,7 +25,7 @@ class Product(BaseModel):
     @classmethod
     async def create_product(cls, name: str, description: str, price: float, category: str, 
                             sizes: List[str], colors: List[str], stock: int, images: List[str],
-                            salePrice: Optional[float] = None, productEntity=None):
+                            salePrice: Optional[float] = None, featured: bool = False, productEntity=None):
         current_time = datetime.now()
         product_data = {
             "name": name,
@@ -37,6 +37,7 @@ class Product(BaseModel):
             "colors": colors,
             "stock": stock,
             "images": images,
+            "featured": featured,
             "createdAt": current_time,
             "updatedAt": current_time
         }
@@ -53,6 +54,7 @@ class Product(BaseModel):
             colors=colors,
             stock=stock,
             images=images,
+            featured=featured,
             createdAt=current_time,
             updatedAt=current_time
         )

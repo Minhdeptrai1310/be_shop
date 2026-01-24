@@ -19,10 +19,7 @@ class Collections(Enum):
 
 
 def init_db():
-    user = quote_plus(DB_USER)
-    password = quote_plus(DB_PASSWORD)
-    uri = f"mongodb+srv://{user}:{password}@{DB_URI}/?appName={APP_NAME}"
-    mongo_client = MongoClient(uri)
+    mongo_client = MongoClient(DB_URI)
     try:
         mongo_client.admin.command('ping')
         print("Connected to MongoDB")

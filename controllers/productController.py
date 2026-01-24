@@ -16,11 +16,12 @@ async def createProductController(payload: ProductCreateSchema, productEntity):
             colors=payload.colors,
             stock=payload.stock,
             images=payload.images,
+            featured=payload.featured,
             productEntity=productEntity
         )
         return successResponse("Product created successfully", product.dict())
     except Exception as e:
-        return errorResponse("Failed to create product", str(e), 400)
+        return errorResponse("Failed to create product", str(e))
 
 
 async def getProductController(product_id: str, productEntity):

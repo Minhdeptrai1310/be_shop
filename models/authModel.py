@@ -5,7 +5,9 @@ class UserRegisterSchema(BaseModel):
     username: str = Field(...)
     email: EmailStr = Field(...)
     password: str = Field(...)
-    print("UserRegisterSchema:", username, email, password)
+    phone: str = Field(...)
+
+    print("UserRegisterSchema:", username, email, password, phone)
     class Config:
         json_schema_extra = {
             "example": {

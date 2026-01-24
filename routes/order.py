@@ -1,7 +1,7 @@
 from models.orderModel import OrderCreateSchema
 from database.collections import get_user_collection, get_order_collection, get_cart_collection, get_product_collection, get_order_items_collection, get_mail_collection
 from fastapi import APIRouter, Depends, Path
-from controllers.orderController import check_out_and_send_mail, get_all_orders_controller, confirm_payment_controller
+from controllers.orderController import cancel_order_controller, check_out_and_send_mail, get_all_orders_controller, confirm_payment_controller, get_order_by_user_id_controller
 
 order = APIRouter()
 
@@ -42,3 +42,22 @@ async def confirmPayment(
     emailCollection = Depends(get_mail_collection)
 ):
     return await confirm_payment_controller(id, orderCollection, orderItemsCollection, userCollection, emailCollection)
+
+@order.get('/user/{user_id}')
+async def getOrdersByUserId(
+    user_id: str = Path(...),
+    orderCollection = Depends(get_order_collection),
+    orderItemsCollection = Depends(get_order_items_collection),
+    userCollection = Depends(get_user_collection)
+):
+    return await get_order_by_user_id_controller(user_id, orderCollection, orderItemsCollection, userCollection)
+
+@order.post('/{id}/cancel')
+async def cancelOrder(
+    id: str = Path(...),
+    orderCollection = Depends(get_order_collection),
+    orderItemsCollection = Depends(get_order_items_collection),
+    productCollection = Depends(get_product_collection),
+    userCollection = Depends(get_user_collection)
+):
+    return await cancel_order_controller(id, orderCollection, orderItemsCollection, productCollection, userCollection)

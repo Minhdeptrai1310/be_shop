@@ -8,7 +8,7 @@ auth = APIRouter()
 
 @auth.post('/register', response_model=UserRegisterResponseSchema)
 async def register(user: UserRegisterSchema, userEntity=Depends(get_user_collection)):
-    return await registerController(user.username, user.email, user.password, userEntity)
+    return await registerController(user.username, user.email, user.password, user.phone, userEntity)
 
 @auth.post('/login')
 async def login(user: UserLoginSchema, userEntity=Depends(get_user_collection)):

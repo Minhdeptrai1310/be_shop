@@ -10,7 +10,7 @@ router = APIRouter()
 
 SMTP_HOST = "smtp.gmail.com"
 SMTP_PORT = 587
-SMTP_USER = "dominh162002@gmail.com"
+SMTP_USER = "iamminhtran13102003@gmail.com"
 SMTP_PASS = APP_PASSWORD
 
 class SendMailDTO(BaseModel):

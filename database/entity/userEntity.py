@@ -18,7 +18,7 @@ class User(BaseModel):
     updatedAt: Optional[datetime] = None
 
     @classmethod
-    async def create_user(cls, name: str, email: str, password: str, userEntity):
+    async def create_user(cls, name: str, email: str, password: str, phone: str, userEntity):
         # NOTE: base64 is reversible and not suitable for password hashing in production.
         # Kept as-is to match existing code pattern; consider replacing with a secure hash.
         hashed_password = base64.b64encode(password.encode('utf-8')).decode('utf-8')
@@ -28,12 +28,13 @@ class User(BaseModel):
             "email": email,
             "role": "user",
             "password": hashed_password,
+            "phone": phone,
             "createdAt": current_time,
             "updatedAt": current_time
         }
         result = userEntity.insert_one(user_data)
         user_id = str(result.inserted_id)
-        return cls(id=user_id, name=name, email=email, role="user", createdAt=current_time, updatedAt=current_time)
+        return cls(id=user_id, name=name, email=email, role="user", phone=phone, createdAt=current_time, updatedAt=current_time)
 
     @staticmethod
     async def delete_user(user_id: str, userEntity):

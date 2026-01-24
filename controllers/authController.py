@@ -18,7 +18,7 @@ import secrets
 import string
 import jwt
 
-async def registerController(name: str, email: str, password: str, db):
+async def registerController(name: str, email: str, password: str, phone: str, db):
     user = await User.find_one_user_by_email(email, db)
     if user:
         response = errorResponse("User with this email exist")
@@ -27,11 +27,12 @@ async def registerController(name: str, email: str, password: str, db):
             status_code=status.HTTP_400_BAD_REQUEST, detail=response)
     try:
         users_collection = db
-        new_user = await User.create_user(name=name, email=email, password=password, userEntity=users_collection)
+        new_user = await User.create_user(name=name, email=email, password=password, phone=phone, userEntity=users_collection)
         return successResponse("User Registered", {
             "id": str(new_user.id),
             "username": new_user.name,
             "email": new_user.email,
+            "phone": new_user.phone
         })
     except Exception as ex:
         print("exception under Register controller:", ex)

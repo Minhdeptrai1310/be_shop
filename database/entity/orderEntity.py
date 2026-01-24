@@ -34,6 +34,7 @@ class OrderEntity(BaseModel):
     async def create_order(
         cls,
         userId: str,
+        user_info: User,
         totalAmount: int,
         paymentMethod: OrderPaymentMethodEnum,
         orderCode: str,
@@ -43,6 +44,7 @@ class OrderEntity(BaseModel):
         now = datetime.utcnow()
         order_data = {
             "userId": userId,
+            "user_info": user_info.model_dump(),
             "orderCode": orderCode,
             "totalAmount": totalAmount,
             "status": OrderStatusEnum.PENDING_PAYMENT,
@@ -58,6 +60,7 @@ class OrderEntity(BaseModel):
         return cls(
             id=str(result.inserted_id),
             userId=userId,
+            user_info=user_info,
             orderCode=orderCode,
             totalAmount=totalAmount,
             status=OrderStatusEnum.PENDING_PAYMENT,
@@ -79,6 +82,15 @@ class OrderEntity(BaseModel):
             orders.append(item)
         return orders
     
+    @classmethod
+    async def get_orders_by_user_id(cls, user_id: str, db, order_items_db, user_db):
+        order_docs = db.find({"userId": user_id})
+        orders = []
+        for doc in order_docs:
+            order_id = str(doc['_id'])
+            item = await cls.find_order_by_id(order_id, db, order_items_db, user_db)
+            orders.append(item)
+        return orders
     @classmethod
     async def find_order_by_id(cls, order_id: str, db, order_items_db, user_db):
         order_doc = db.find_one({"_id": ObjectId(order_id)})
@@ -151,6 +163,31 @@ class OrderEntity(BaseModel):
             },
             {"$set": {"status": OrderStatusEnum.EXPIRED}}
         )
+        
+    @classmethod
+    async def cancel_order(cls, order_id: str, orderEntity):
+        """Hủy đơn hàng - chỉ hủy được nếu chưa thanh toán"""
+        now = datetime.utcnow()
+        result = orderEntity.update_one(
+            {
+                "_id": ObjectId(order_id),
+                "status": {"$in": [OrderStatusEnum.PENDING_PAYMENT, OrderStatusEnum.EXPIRED]}
+            },
+            {
+                "$set": {
+                    "status": OrderStatusEnum.CANCELLED,
+                    "updatedAt": now
+                }
+            }
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(
+                status_code=400, 
+                detail="Không thể hủy đơn hàng. Đơn hàng không tồn tại hoặc đã được thanh toán/xử lý."
+            )
+        
+        return True
 
 
 
